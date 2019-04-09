@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -27,8 +28,25 @@ class TimeSeriesSteps {
   TimeSeriesSteps(this.time, this.steps);
 }
 
-class StepCollectors {
+class Record {
+  final DateTime date;
+  final int steps;
+  final DocumentReference reference;
 
+  Record.fromMap(Map<String, dynamic> map, {this.reference})
+      : assert(map['date'] != null),
+        assert(map['steps'] != null),
+        date = map['date'],
+        steps = map['steps'];
+
+  Record.fromSnapshot(DocumentSnapshot snapshot)
+      : this.fromMap(snapshot.data, reference: snapshot.reference);
+
+  @override
+  String toString() => "Record<$date:$steps>";
+}
+
+class StepCollectors {
 
   main() {
     var config = new File("output.txt");
@@ -38,7 +56,6 @@ class StepCollectors {
 }
 
 class DailyTracker extends StatefulWidget {
-
   @override
   _DailyTrackerState createState() => new _DailyTrackerState();
 }
@@ -47,6 +64,7 @@ class _DailyTrackerState extends State<DailyTracker> {
 
   String text = "";
 
+/*
   void main() async{
     /// Assumes the given path is a text-file-asset.
     Future<String> getFileData(String path) async {
@@ -54,13 +72,58 @@ class _DailyTrackerState extends State<DailyTracker> {
     }
 
     text = await getFileData("assets/output.txt");
-  }
-
+  }*/
   @override
   Widget build(BuildContext context) {
-    main();
+    return Scaffold(
+      appBar: new AppBar(
+        centerTitle: false,
+        title: new Text('Daily Activity',
+            style: TextStyle(color: Colors.white,
+                fontSize: 24.0)),
+      ),
+      body: _buildBody(context),
+    );
+  }
 
+  Widget _buildBody(BuildContext context) {
+    return StreamBuilder<QuerySnapshot>(
+        stream: Firestore.instance.collection('steps').snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) return LinearProgressIndicator();
 
+          return _buildList(context, snapshot.data.documents);
+        }
+    );
+  }
+
+  Widget _buildList(BuildContext context, List<DocumentSnapshot> snapshot) {
+    return ListView(
+      padding: const EdgeInsets.only(top: 20.0),
+      children: snapshot.map((data) => _buildListItem(context, data)).toList(),
+    );
+  }
+
+  Widget _buildListItem(BuildContext context, DocumentSnapshot data) {
+    final record = Record.fromSnapshot(data);
+
+    return Padding(
+      key: ValueKey(record.date),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey),
+          borderRadius: BorderRadius.circular(5.0),
+        ),
+        child: ListTile(
+          title: Text("A Title"),
+          trailing: Text(record.steps.toString()),
+          onTap: () => print(record),
+        ),
+      ),
+    );
+
+    /*
     List<String> lines = text.split("\n");
     List<String> dates = new List<String>();
     List<double> steps = new List<double>();
@@ -72,7 +135,6 @@ class _DailyTrackerState extends State<DailyTracker> {
         steps.add(double.parse(temp[2]));
       }
     }
-
 
     Map<String, double> dataPair = Map.fromIterables(dates, steps);
 
@@ -125,13 +187,9 @@ class _DailyTrackerState extends State<DailyTracker> {
       ),
     );
 
+
     return new Scaffold(
-      appBar: new AppBar(
-        centerTitle: false,
-        title: new Text('Daily Activity',
-            style: TextStyle(color: Colors.white,
-                fontSize: 24.0)),
-      ),
+
       body: SingleChildScrollView (
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -220,6 +278,6 @@ class _DailyTrackerState extends State<DailyTracker> {
           ],
         ),
       ),
-    );
+    ); */
   }
 }
