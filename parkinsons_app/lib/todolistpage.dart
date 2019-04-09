@@ -52,7 +52,7 @@ class MyAppState extends State<MyApp> {
     //return new MaterialApp(
     return new Scaffold(
       // Helps with bottom overflow
-        resizeToAvoidBottomPadding: true,
+        resizeToAvoidBottomPadding: false,
         // Creates the title bar
         appBar: new AppBar(
           title: new Text('To-Do List',
